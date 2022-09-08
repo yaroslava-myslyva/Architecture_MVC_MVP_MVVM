@@ -10,20 +10,28 @@ import android.widget.EditText
 import android.widget.Toast
 import com.example.architecture_mvc_mvp_mvvm.R
 import com.example.architecture_mvc_mvp_mvvm.domain.implementations.AuthRepositoryImpl
+import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenter
+import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenterImpl
+import com.example.architecture_mvc_mvp_mvvm.presenter.LoginView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-class SettingsFragment : Fragment() {
+class SettingsFragment : Fragment(), LoginView {
 
-    private var authRepository = AuthRepositoryImpl()
+    private val loginPresenter = LoginPresenterImpl()
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        loginPresenter.attachView(view = this@SettingsFragment)
+        // Це та інше реалізоване в біблотеці Moxy
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-
         return inflater.inflate(R.layout.fragment_settings, container, false)
     }
 
@@ -31,40 +39,22 @@ class SettingsFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         val btnLogin = view.findViewById<Button>(R.id.btnLogin)
         btnLogin.setOnClickListener {
-            if (!validateEmail()) return@setOnClickListener
-            if(!validatePassword()) return@setOnClickListener
-            performLogin() // Тут автор у відео трохи помилився, бо у разі помилки не вискакує нічого. Але зараз не суть. І взагалі я накостилила. Але не важливо
-        }
-
-    }
-
-    // Model implementation
-    private fun performLogin() {
-        CoroutineScope(Dispatchers.IO).async {
-            val errorMessage = authRepository.login(
-                email = view?.findViewById<EditText>(R.id.textEmail)?.editableText.toString(),
-                password = view?.findViewById<EditText>(R.id.textPassword)?.editableText.toString()
-            ).await()
-
-            if (errorMessage.isEmpty()) {
-                launch(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), "Success login", Toast.LENGTH_SHORT).show()
-                }
-            } else {
-                launch(Dispatchers.Main) {
-                    Toast.makeText(requireContext(), errorMessage, Toast.LENGTH_SHORT).show()
-                }
-            }
+            loginPresenter.login(
+                email = view.findViewById<EditText>(R.id.textEmail)?.editableText.toString(),
+                password = view.findViewById<EditText>(R.id.textPassword)?.editableText.toString()
+            )
         }
     }
 
-    private fun validateEmail(): Boolean{
-        Toast.makeText(requireContext(), view?.findViewById<EditText>(R.id.textEmail)?.editableText.toString(), Toast.LENGTH_SHORT).show()
-        return view?.findViewById<EditText>(R.id.textEmail)?.editableText.toString().contains("@")
-                && view?.findViewById<EditText>(R.id.textEmail)?.editableText.toString().contains(".")
+    override fun showSuccess() {
+        Toast.makeText(requireContext(), "Success login", Toast.LENGTH_SHORT).show()
     }
 
-    private fun validatePassword(): Boolean{
-        return view?.findViewById<EditText>(R.id.textPassword)?.editableText.toString().length > 8
+    override fun showError(message: String) {
+        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
+    }
+
+    override fun showError(message: Int) {
+        Toast.makeText(requireContext(), getString(message), Toast.LENGTH_SHORT).show()
     }
 }
