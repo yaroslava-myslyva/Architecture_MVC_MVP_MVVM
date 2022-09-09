@@ -8,25 +8,22 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
+import androidx.lifecycle.Observer
 import com.example.architecture_mvc_mvp_mvvm.R
 import com.example.architecture_mvc_mvp_mvvm.domain.implementations.AuthRepositoryImpl
 import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenter
 import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenterImpl
 import com.example.architecture_mvc_mvp_mvvm.presenter.LoginView
+import com.example.architecture_mvc_mvp_mvvm.viewmodels.AuthViewModel
+import com.example.architecture_mvc_mvp_mvvm.viewmodels.LoginState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 
-class SettingsFragment : Fragment(), LoginView {
+class SettingsFragment : Fragment() {
 
-    private val loginPresenter = LoginPresenterImpl()
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        loginPresenter.attachView(view = this@SettingsFragment)
-        // Це та інше реалізоване в біблотеці Moxy
-    }
+    private val viewModel = AuthViewModel()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,22 +36,35 @@ class SettingsFragment : Fragment(), LoginView {
         super.onViewCreated(view, savedInstanceState)
         val btnLogin = view.findViewById<Button>(R.id.btnLogin)
         btnLogin.setOnClickListener {
-            loginPresenter.login(
-                email = view.findViewById<EditText>(R.id.textEmail)?.editableText.toString(),
-                password = view.findViewById<EditText>(R.id.textPassword)?.editableText.toString()
-            )
+            viewModel.login(email = view.findViewById<EditText>(R.id.textEmail).text.toString(),
+            password = view.findViewById<EditText>(R.id.textPassword).text.toString())
         }
-    }
-
-    override fun showSuccess() {
-        Toast.makeText(requireContext(), "Success login", Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showError(message: String) {
-        Toast.makeText(requireContext(), message, Toast.LENGTH_SHORT).show()
-    }
-
-    override fun showError(message: Int) {
-        Toast.makeText(requireContext(), getString(message), Toast.LENGTH_SHORT).show()
+        viewModel.state.observe(viewLifecycleOwner,
+        Observer<LoginState> { state ->
+            when(state){
+                is LoginState.LoginSucceededState -> {
+                    Toast.makeText(requireContext(), "Success login", Toast.LENGTH_SHORT).show()
+                }
+                is LoginState.SendingState -> {
+                    view.findViewById<EditText>(R.id.textEmail).isEnabled = false
+                    view.findViewById<EditText>(R.id.textPassword).isEnabled = false
+                    btnLogin.isEnabled = false
+                }
+                is LoginState.ErrorState<*> -> {
+                    when(state.message){
+                        is Int -> Toast.makeText(requireContext(), getString(state.message), Toast.LENGTH_SHORT).show()
+                        is String -> Toast.makeText(requireContext(), state.message, Toast.LENGTH_SHORT).show()
+                    }
+                    view.findViewById<EditText>(R.id.textEmail).isEnabled = true
+                    view.findViewById<EditText>(R.id.textPassword).isEnabled = true
+                    btnLogin.isEnabled = true
+                }
+                is LoginState.DefaultState -> {
+                    view.findViewById<EditText>(R.id.textEmail).isEnabled = true
+                    view.findViewById<EditText>(R.id.textPassword).isEnabled = true
+                    btnLogin.isEnabled = true
+                }
+            }
+        })
     }
 }
