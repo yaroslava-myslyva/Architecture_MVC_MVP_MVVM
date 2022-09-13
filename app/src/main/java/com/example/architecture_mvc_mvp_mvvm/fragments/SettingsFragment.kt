@@ -10,10 +10,7 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.lifecycle.Observer
 import com.example.architecture_mvc_mvp_mvvm.R
-import com.example.architecture_mvc_mvp_mvvm.domain.implementations.AuthRepositoryImpl
-import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenter
-import com.example.architecture_mvc_mvp_mvvm.presenter.LoginPresenterImpl
-import com.example.architecture_mvc_mvp_mvvm.presenter.LoginView
+
 import com.example.architecture_mvc_mvp_mvvm.viewmodels.AuthViewModel
 import com.example.architecture_mvc_mvp_mvvm.viewmodels.LoginState
 import kotlinx.coroutines.CoroutineScope
